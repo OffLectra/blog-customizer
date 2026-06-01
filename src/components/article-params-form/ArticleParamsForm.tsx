@@ -1,6 +1,6 @@
 import { ArrowButton } from 'src/ui/arrow-button';
 import { Button } from 'src/ui/button';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { Select } from 'src/ui/select';
 import { RadioGroup } from 'src/ui/radio-group';
@@ -13,58 +13,56 @@ import {
 	backgroundColors,
 	contentWidthArr,
 	fontSizeOptions,
+	defaultArticleState,
 } from 'src/constants/articleProps';
 import type { OptionType, ArticleStateType } from 'src/constants/articleProps';
 
 type ArticleParamsFormProps = {
-	isOpen: boolean;
-	onToggle: () => void;
-	formState: ArticleStateType;
-	onChange: (newState: ArticleStateType) => void;
-	onApply: () => void;
-	onReset: () => void;
+	onApply: (newState: ArticleStateType) => void;
 };
 
-export const ArticleParamsForm = ({
-	isOpen,
-	onToggle,
-	formState,
-	onChange,
-	onApply,
-	onReset,
-}: ArticleParamsFormProps) => {
+export const ArticleParamsForm = ({ onApply }: ArticleParamsFormProps) => {
+	const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+	const [formState, setFormState] = useState(defaultArticleState);
 	const sidebarRef = useRef<HTMLDivElement>(null);
 	useEffect(() => {
-		if (!isOpen) return;
+		if (!isSidebarOpen) return;
 
 		const handleClickOutside = (e: MouseEvent) => {
 			if (
 				sidebarRef.current &&
 				!sidebarRef.current.contains(e.target as Node)
 			) {
-				onToggle();
+				setIsSidebarOpen(false);
 			}
 		};
-
 		document.addEventListener('mousedown', handleClickOutside);
 		return () => document.removeEventListener('mousedown', handleClickOutside);
-	}, [isOpen, onToggle]);
+	}, [isSidebarOpen]);
 	const handleFieldChange =
 		(field: keyof ArticleStateType) => (value: OptionType) => {
-			onChange({ ...formState, [field]: value });
+			setFormState((prev) => ({ ...prev, [field]: value }));
 		};
 	return (
 		<div ref={sidebarRef}>
-			<ArrowButton isOpen={isOpen} onClick={onToggle} />
+			<ArrowButton
+				isOpen={isSidebarOpen}
+				onClick={() => setIsSidebarOpen((prev) => !prev)}
+			/>
 			<aside
-				className={clsx(styles.container, { [styles.container_open]: isOpen })}>
+				className={clsx(styles.container, {
+					[styles.container_open]: isSidebarOpen,
+				})}>
 				<form
 					className={styles.form}
 					onSubmit={(e) => {
 						e.preventDefault();
-						onApply();
+						onApply(formState);
 					}}
-					onReset={onReset}>
+					onReset={() => {
+						setFormState(defaultArticleState);
+						onApply(defaultArticleState);
+					}}>
 					<Text size={31} weight={800} uppercase>
 						Задайте параметры
 					</Text>
